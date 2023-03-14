@@ -6,6 +6,9 @@ package it.polito.tdp.IndovinaNumero;
 
 import java.net.URL;
 import java.util.ResourceBundle;
+
+import it.polito.tdp.IndovinaNumero.model.Gioco;
+import it.polito.tdp.IndovinaNumero.model.Gioco.StatoGioco;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -15,12 +18,7 @@ import javafx.scene.control.ProgressBar;
 
 public class FXMLController {
 	
-	
-	private int TMax;
-	private int NMax;
-	private int NTentativiFatti;
-	private int numeroSegreto;
-	
+	private Gioco model;
 
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
@@ -57,26 +55,13 @@ public class FXMLController {
 
     @FXML
     void doNuovaPartita(ActionEvent event) {
-    	//inizializzare variabili del gioco
-    	this.NTentativiFatti = 0;
-    	this.numeroSegreto = (int)(Math.random()*this.NMax) + 1;
-    	try {
-    		this.TMax = Integer.parseInt(this.txtTMax.getText());
-    	}catch(NumberFormatException e) {
-    		this.txtCom.setText("TMax deve eseere un numero!");
-    	}
-    	
-    	try {
-    		this.NMax = Integer.parseInt(this.txtNMax.getText());
-    	}catch(NumberFormatException e) {
-    		this.txtCom.setText("NMax deve eseere un numero!");
-    	}
+    	//chiedere al modello di iniziare il gioco
+    	this.model.iniziaGioco();
     	
     	//scrivere informazioni utente
-    	this.txtTentativi.setText( Integer.toString(this.TMax-this.NTentativiFatti) );
-    	this.txtNMax.setText(Integer.toString(this.NMax) );
-    	this.txtTMax.setText(Integer.toString(this.TMax));
-//    	this.txtRisultato.setText(Integer.toString(numeroSegreto));
+    	this.txtTentativi.setText( Integer.toString(this.model.getTMax()-this.model.getNTentativiFatti()) );
+    	this.txtNMax.setText(Integer.toString(this.model.getNMax()));
+    	this.txtTMax.setText(Integer.toString(this.model.getTMax()));
     	
     	this.btnPRova.setDisable(false);
     	this.txtRisultato.clear();
@@ -84,7 +69,6 @@ public class FXMLController {
     	this.txtCom.clear();
     	
     	this.barTentativi.setProgress(0);
-
     }
 
     @FXML
@@ -96,42 +80,43 @@ public class FXMLController {
     	}catch(NumberFormatException e) {
     		this.txtCom.setText("inserire un numero!");
     		return;
-    	}
-    	
+    	}    	
     	
     	//fare controlli sul numero
     	
-    	//incrementare numero tentativi fatti
-    	this.NTentativiFatti++;
+    	//facciamo il tentativo
+    	Gioco.StatoGioco risultato = model.faiTentativo(guess);
     	
-    	this.txtTentativi.setText( Integer.toString(this.TMax-this.NTentativiFatti) );
-    	this.barTentativi.setProgress((double) this.NTentativiFatti / this.TMax);
+    	//aggiorniamo la visualizzazione dell'avanzamento del gioco
+    	this.txtTentativi.setText( Integer.toString(this.model.getTMax()-this.model.getNTentativiFatti()) );
+    	this.barTentativi.setProgress((double) this.model.getNTentativiFatti() / this.model.getTMax());
     	
-    	//giocare
-    	if (guess == this.numeroSegreto) {
-    		this.txtRisultato.appendText("Hai vinto. Il numero segreto era " + this.numeroSegreto + "\n");
+    	//aggiornare  l'interfaccia grafica con lo stato del gioco
+    	//Caso: Successo
+    	if (risultato == Gioco.StatoGioco.Vinto) { //non devo fare equals, è una enumerazione
+    		this.txtRisultato.appendText("Hai vinto. Il numero segreto era " + this.model.getNumeroSegreto() + "\n");
     		this.btnPRova.setDisable(true);
     		return;
     	}
     	
-    	if (this.NTentativiFatti == this.TMax) {
-    		this.txtRisultato.appendText("Hai perso. Il numero segreto era " + this.numeroSegreto + "\n");
+    	//Caso: Sconfitta
+    	if (risultato == Gioco.StatoGioco.Perso) {
+    		this.txtRisultato.appendText("Hai perso. Il numero segreto era " + this.model.getNumeroSegreto() + "\n");
     		this.btnPRova.setDisable(true);
     		return;
     	}
     	
-    	if(guess>this.numeroSegreto) {
+    	if(risultato == Gioco.StatoGioco.TroppoAlto) {
     		this.txtRisultato.appendText("Numero troppo alto\n");
     	}else  {
     		this.txtRisultato.appendText("Numero tropo basso\n");
     	}
-    	
-    	
-    	
     }
     
+    public void setModel(Gioco model) { //è un semplice set
+    	this.model = model;
+    }
     
-
     @FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {
         assert btnNuovaPartita != null : "fx:id=\"btnNuovaPartita\" was not injected: check your FXML file 'Scene.fxml'.";
@@ -142,7 +127,6 @@ public class FXMLController {
         assert txtRisultato != null : "fx:id=\"txtRisultato\" was not injected: check your FXML file 'Scene.fxml'.";
         assert txtTMax != null : "fx:id=\"txtTMax\" was not injected: check your FXML file 'Scene.fxml'.";
         assert txtTentativi != null : "fx:id=\"txtTentativi\" was not injected: check your FXML file 'Scene.fxml'.";
-
     }
 
 }
